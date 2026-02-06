@@ -1,5 +1,5 @@
 ﻿#BUILD STAGE START
-FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 
 #SET WORKING DIR
 WORKDIR /app
@@ -25,7 +25,7 @@ RUN dotnet publish "src/server/signalr.api/SignalR.Api.csproj" \
     -o /app/publish/
 
 #RUNTIME STAGE START
-FROM mcr.microsoft.com/dotnet/aspnet:6.0-alpine as runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine as runtime
 
 WORKDIR /app
 
