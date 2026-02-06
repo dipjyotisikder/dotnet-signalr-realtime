@@ -1,0 +1,91 @@
+# ============================================================================
+# Angular Frontend-specific .gitignore
+# ============================================================================
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# NPM
+npm-debug.log
+npm-debug.log*
+npm-error.log
+npm-shrinkwrap.json
+
+# Yarn
+yarn-error.log*
+
+# PNPM
+pnpm-debug.log*
+
+# Build output
+dist/
+dist-*/
+!dist/
+*.bundle.js
+*.bundle.js.map
+
+# Angular
+.angular/
+.angular/cache/
+.ng_pkg_*
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+junit.xml
+test-results.xml
+karma.conf.js
+test-report.html
+
+# IDE - Angular specific
+jsconfig.json
+.angular/**
+.ng-dev.log
+.ng-dev.err*.log
+.ng-dev.user*
+
+# Webpack
+.webpack-dev-server.js
+webpack.config.js.map
+
+# Linting
+.eslintcache
+.stylelintcache
+.prettierignore
+
+# Hot reload / Development
+.sass-cache/
+.less-cache/
+*.css.map
+*.js.map
+
+# Typings
+typings/
+
+# Husky
+.husky/_
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp

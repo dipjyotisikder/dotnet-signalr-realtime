@@ -1,0 +1,94 @@
+# ============================================================================
+# .NET Backend-specific .gitignore
+# ============================================================================
+
+# Build directories
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+*.nuget.props
+*.nuget.targets
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.sln.docstates
+*.userprefs
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+*.mdf
+*.ldf
+*.ndf
+signalr.db
+
+# Code analysis
+StyleCopReport.xml
+*.ruleset
+
+# Testing & Coverage
+TestResults/
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+coverage*/
+*.coverage
+*.coveragexml
+coverage.json
+coverage.xml
+coverage.info
+coverage.lcov
+opencover/
+
+# ReSharper / JetBrains Rider
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+.idea/
+*.sln.iml
+
+# Entity Framework
+migrations.log
+
+# MSBuild
+*.binlog
+
+# FodyWeavers
+FodyWeavers.xsd
+
+# Environment files
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+
+# Secrets
+secrets.json
+.env
+.env.local
+.env.*.local
+
+# Logs
+[Ll]og/
+[Ll]ogs/
+*.log
+*.tlog
+
+# Temporary files
+tmp/
+temp/
+*.tmp
