@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Solution>
+    <Project Path="src/server/signalr.api/SignalR.Api.csproj" />
+    <Project Path="src/server/signalr.test/SignalR.UnitTests.csproj" />
+</Solution>
