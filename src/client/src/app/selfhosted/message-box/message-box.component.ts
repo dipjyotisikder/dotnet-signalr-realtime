@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { SelfHostedService } from '../selfhosted.services';
 import {
   FormBuilder,
@@ -13,13 +13,14 @@ import { HubService } from '../../shared/hub.services';
 import { AuthService } from 'src/app/shared/auth.service';
 import { TimeAgoPipe } from 'src/app/shared/timeAgo.pipe';
 import { UserModel } from 'src/app/models/UserModel';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-message-box',
   templateUrl: './message-box.component.html',
   styleUrls: ['./message-box.component.css'],
 })
-export class MessageBoxComponent implements OnInit {
+export class MessageBoxComponent implements OnInit, OnDestroy {
   currentUserId: number;
 
   conversationAudience: ConversationAudienceModel | null = null;
@@ -36,6 +37,8 @@ export class MessageBoxComponent implements OnInit {
   typingFocused: boolean = false;
   typingFocusedInterval: any = null;
 
+  private subscriptions: Subscription = new Subscription();
+
   constructor(
     private formBuilder: FormBuilder,
     private route: ActivatedRoute,
@@ -51,34 +54,6 @@ export class MessageBoxComponent implements OnInit {
     this.messageForm = this.formBuilder.group({
       conversationId: new FormControl(),
       text: new FormControl('', Validators.required),
-    });
-
-    // INIT LISTENER FOR MESSAGE_IS_CREATED EVENT
-    this.hubService.messageIsCreatedEventHandler().subscribe((success) => {
-      if (!success) return;
-      this.messageList.push(success);
-      success.creatorUser && this.removeTyping(success.creatorUser);
-    });
-
-    // INIT LISTENER FOR USER_IS_JOINED EVENT
-    this.hubService.userIsJoinedEventHandler().subscribe((success) => {
-      // console.log('Joined', success);
-      if (!success) return;
-      if (
-        this.conversationAudience && !this.conversationAudience.audienceUsers.some((x) => x.id == success.id)
-      ) {
-        this.conversationAudience.audienceUsers.push(success);
-      }
-    });
-
-    // INIT LISTENER FOR USER_IS_TYPING EVENT
-    this.hubService.userIsTypingEventHandler().subscribe((success) => {
-      if (!success) return;
-      if (success.isTyping) {
-        this.activateTyping(success);
-      } else {
-        this.removeTyping(success);
-      }
     });
   }
 
@@ -109,15 +84,65 @@ export class MessageBoxComponent implements OnInit {
       return;
     }
 
-    this.service.createMessage(this.messageForm.value).subscribe((success) => {
-      this.messageForm.controls['text'].reset();
-    });
+    const paramsSub = this.route.params.subscribe((routeData) => {
+      const conversationId = +routeData['id'];
 
-    textInput.blur();
+      this.messageForm.controls['conversationId'].setValue(conversationId);
+
+      // INIT LISTENER FOR MESSAGE_IS_CREATED EVENT
+      const messageCreatedSub = this.hubService.messageIsCreatedEventHandler().subscribe((success) => {
+        if (!success) return;
+        // Check if message already exists to prevent duplicates
+        if (!this.messageList.some((x) => x.id === success.id)) {
+          this.messageList.push(success);
+        }
+        success.creatorUser && this.removeTyping(success.creatorUser);
+      });
+      this.subscriptions.add(messageCreatedSub);
+
+      // INIT LISTENER FOR USER_IS_JOINED EVENT
+      const userJoinedSub = this.hubService.userIsJoinedEventHandler().subscribe((success) => {
+        // console.log('Joined', success);
+        if (!success) return;
+        if (
+          this.conversationAudience && !this.conversationAudience.audienceUsers.some((x) => x.id == success.id)
+        ) {
+          this.conversationAudience.audienceUsers.push(success);
+        }
+      });
+      this.subscriptions.add(userJoinedSub);
+
+      // INIT LISTENER FOR USER_IS_TYPING EVENT
+      const userTypingSub = this.hubService.userIsTypingEventHandler().subscribe((success) => {
+        if (!success) return;
+        if (success.isTyping) {
+          this.activateTyping(success);
+        } else {
+          this.removeTyping(success);
+        }
+      });
+      this.subscriptions.add(userTypingSub);
+
+      const audienceSub = this.service
+        .getConversationAudiences(conversationId)
+        .subscribe((success) => {
+          this.conversationAudience = success;
+        });
+      this.subscriptions.add(audienceSub);
+
+      const messagesSub = this.service.getMessages(conversationId).subscribe((success) => {
+        this.messageList.push(...success);
+        this.messageListLoaded = true;
+      });
+      this.subscriptions.add(messagesSub);
+    });
+    this.subscriptions.add(paramsSub);
   }
 
-  timeTransform(dateTime: string): string {
-    return this.timeAgoPipe.transform(dateTime);
+  ngOnDestroy() {
+    this.subscriptions.unsubscribe();
+    this.typingTimeout && clearTimeout(this.typingTimeout);
+    this.typingFocusedInterval && clearInterval(this.typingFocusedInterval);
   }
 
   activateTyping(user: UserModel) {
@@ -151,5 +176,9 @@ export class MessageBoxComponent implements OnInit {
         this.conversationAudience && this.hubService.triggerUserIsTypingEvent(this.conversationAudience.id, true);
       }
     }, 1000);
+  }
+
+  timeTransform(date: any): string {
+    return this.timeAgoPipe.transform(date);
   }
 }

@@ -1,14 +1,4 @@
-version: "3.9"
-
 services:
-  signalr-db:
-    image: sqlite:latest
-    container_name: signalr-db
-    volumes:
-      - ./data:/data
-    environment:
-      SQLITE_DATABASE: /data/signalr.db
-
   signalr-api:
     build:
       context: .
@@ -17,29 +7,55 @@ services:
     ports:
       - "5000:5000"
       - "5001:5001"
-    depends_on:
-      - signalr-db
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:5000;https://+:5001
+      ASPNETCORE_URLS: http://+:5000
       ConnectionStrings__DefaultConnection: "Data Source=/app/data/signalr.db"
       Jwt__SecretKey: "your-secret-key-min-32-characters-long!"
-      Cors__AllowedOrigins__0: "http://localhost:4200"
     volumes:
       - ./data:/app/data
+    networks:
+      - signalr-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:5000/swagger/index.html",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   signalr-client:
     build:
       context: ./src/client
       dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
     container_name: signalr-client
     ports:
       - "4200:80"
     depends_on:
-      - signalr-api
-    environment:
-      API_URL: "http://signalr-api:5000"
-      SIGNALR_URL: "http://signalr-api:5000/hub"
+      signalr-api:
+        condition: service_healthy
+    networks:
+      - signalr-network
+    healthcheck:
+      test:
+        ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
 volumes:
   data:
+
+networks:
+  signalr-network:
+    driver: bridge

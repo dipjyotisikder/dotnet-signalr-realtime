@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, tap, throwError } from 'rxjs';
 import { selfHostedConstants } from '../constants/selfhosted-constants';
-import { environment } from 'src/environments/environment';
+import { ConfigService } from './config.service';
 import { UserTokenModel } from '../models/UserModel';
 import { JwtPayload, jwtDecode } from 'jwt-decode';
 
@@ -16,7 +16,12 @@ export class AuthService {
     this.hasToken()
   );
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private configService: ConfigService) { }
+
+  private getBaseUrl(): string {
+    const config = this.configService.getConfig();
+    return config?.apiBaseUrl || 'http://localhost:5000';
+  }
 
   public hasToken(): boolean {
     return !!localStorage.getItem(this.accessTokenKey);
@@ -66,20 +71,18 @@ export class AuthService {
 
     return this.http
       .post<UserTokenModel>(
-        environment.selfHostedServerURL +
-        '/' +
-        selfHostedConstants.REFRESH_TOKEN_ENDPOINT,
+        `${this.getBaseUrl()}/${selfHostedConstants.REFRESH_TOKEN_ENDPOINT}`,
         {
           refreshToken: this.getRefreshToken()
         }
       )
       .pipe(
-        tap((response) => {
+        tap((response: UserTokenModel) => {
           if (response) {
             this.setToken(response.accessToken, response.refreshToken);
           }
         }),
-        catchError((error) => {
+        catchError((error: any) => {
           return throwError(() => new Error(error));
         })
       );
