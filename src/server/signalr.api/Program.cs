@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
@@ -12,6 +13,7 @@ using SignalR.Api.Data.SqLite;
 using SignalR.Api.Hubs;
 using SignalR.Api.Constants;
 using SignalR.Api.Infrastructure.DependencyInjection;
+using SignalR.Api.Configuration;
 
 // SERVICE CONTAINER
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -60,6 +62,11 @@ builder.Services.AddScoped<IMessageService, MessageService>();
 
 builder.Services.AddInfrastructureDependencies();
 
+// Register AppConfiguration from appsettings
+var appConfiguration = new AppConfiguration();
+builder.Configuration.GetSection("AppConfiguration").Bind(appConfiguration);
+builder.Services.AddSingleton(appConfiguration);
+
 // PIPELINE
 WebApplication app = builder.Build();
 
@@ -72,8 +79,9 @@ if (app.Environment.IsDevelopment())
 
 // app.UseHttpsRedirection();
 
-app.UseCors(builder => builder
-    .SetIsOriginAllowed(_ => true)
+var allowedOrigins = appConfiguration.AllowedOrigins;
+app.UseCors(corsBuilder => corsBuilder
+    .WithOrigins(allowedOrigins)
     .AllowAnyMethod()
     .AllowAnyHeader()
     .AllowCredentials());
@@ -87,7 +95,23 @@ app.UseAuthorization();
 
 app.UseWebSockets();
 app.MapControllers();
+app.MapControllerRoute("default", "{controller}/{action}/{id?}");
 
 app.MapHub<ApplicationHub>(HubConstants.HUB_ENDPOINT);
+
+// Apply database migrations on startup
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<SqLiteDataContext>();
+        dbContext.Database.MigrateAsync().Wait();
+        Console.WriteLine("Database migrations applied successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error applying database migrations: {ex.Message}");
+    }
+}
 
 app.Run();

@@ -3,6 +3,7 @@ import { environment } from 'src/environments/environment';
 import { selfHostedConstants } from '../constants/selfhosted-constants';
 import * as signalR from '@microsoft/signalr';
 import { AuthService } from './auth.service';
+import { ConfigService } from './config.service';
 import { NotificationMessage } from '../models/NotificationMessage';
 import { HubConstants } from '../Constants';
 import { MessageModel } from '../models/MessageModel';
@@ -22,19 +23,25 @@ export class HubService {
   private userIsJoinedEvent = new BehaviorSubject<UserModel | null>(null);
   private userIsTypingEvent = new BehaviorSubject<UserModel | null>(null);
 
-  constructor(private authService: AuthService) { }
+  constructor(private authService: AuthService, private configService: ConfigService) { }
 
   startHub() {
+    // Prevent duplicate connections
+    if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
+      return;
+    }
+
+    const config = this.configService.getConfig();
+    if (!config) {
+      console.error('Configuration not loaded yet. Please try again.');
+      return;
+    }
+
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(
-        environment.selfHostedServerURL +
-        '/' +
-        selfHostedConstants.SIGNALR_ENDPOINT,
-        <signalR.IHttpConnectionOptions>{
-          accessTokenFactory: () => this.authService.getAccessToken(),
-          httpClient: new CustomHttpClient(this.authService)
-        },
-      )
+      .withUrl(config.signalrUrl, <signalR.IHttpConnectionOptions>{
+        accessTokenFactory: () => this.authService.getAccessToken(),
+        httpClient: new CustomHttpClient(this.authService)
+      })
       .withAutomaticReconnect()
       .build();
 
