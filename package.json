@@ -1,0 +1,22 @@
+{
+  "name": "signalr-dotnet",
+  "version": "1.0.0",
+  "scripts": {
+    "setup": "npm run setup:server && npm run setup:client",
+    "setup:server": "cd src/server && dotnet restore",
+    "setup:client": "cd src/client && npm install",
+    "build": "npm run build:server && npm run build:client",
+    "build:server": "cd src/server && dotnet build --configuration Release",
+    "build:client": "cd src/client && npm run build",
+    "start": "npm run start:client",
+    "start:server": "cd src/server && dotnet run --project signalr.api/SignalR.Api.csproj",
+    "start:client": "cd src/client && npm start",
+    "test": "npm run test:server && npm run test:client",
+    "test:server": "cd src/server && dotnet test",
+    "test:client": "cd src/client && npm test -- --watch=false",
+    "docs": "documentation-server"
+  },
+  "devDependencies": {},
+  "private": true,
+  "description": "Real-time communication platform using SignalR with .NET backend and Angular frontend"
+}

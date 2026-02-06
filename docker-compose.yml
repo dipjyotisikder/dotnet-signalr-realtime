@@ -1,0 +1,45 @@
+version: "3.9"
+
+services:
+  signalr-db:
+    image: sqlite:latest
+    container_name: signalr-db
+    volumes:
+      - ./data:/data
+    environment:
+      SQLITE_DATABASE: /data/signalr.db
+
+  signalr-api:
+    build:
+      context: .
+      dockerfile: src/server/signalr.api/Dockerfile
+    container_name: signalr-api
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    depends_on:
+      - signalr-db
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5000;https://+:5001
+      ConnectionStrings__DefaultConnection: "Data Source=/app/data/signalr.db"
+      Jwt__SecretKey: "your-secret-key-min-32-characters-long!"
+      Cors__AllowedOrigins__0: "http://localhost:4200"
+    volumes:
+      - ./data:/app/data
+
+  signalr-client:
+    build:
+      context: ./src/client
+      dockerfile: Dockerfile
+    container_name: signalr-client
+    ports:
+      - "4200:80"
+    depends_on:
+      - signalr-api
+    environment:
+      API_URL: "http://signalr-api:5000"
+      SIGNALR_URL: "http://signalr-api:5000/hub"
+
+volumes:
+  data:
